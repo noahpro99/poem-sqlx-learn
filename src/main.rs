@@ -1,8 +1,10 @@
+use envconfig::Envconfig;
 use poem::{listener::TcpListener, Route, Server};
 use poem_openapi::{payload::PlainText, OpenApi, OpenApiService};
 use std::error::Error;
 mod endpoints;
 mod models;
+mod config;
 
 struct Api;
 #[OpenApi]
@@ -16,8 +18,8 @@ impl Api {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv::dotenv().ok();
-    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = sqlx::PgPool::connect(&db_url).await?;
+    let config = config::Config::init_from_env().expect("Failed to read config from env");
+    let pool = sqlx::PgPool::connect(&config.database_url).await?;
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
